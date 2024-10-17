@@ -1,0 +1,18 @@
+- hosts: webserver
+  become: true
+  tasks:
+    - name: Installer Docker et Docker Compose
+      apt:
+        name: 
+          - docker.io
+          - docker-compose
+        state: present
+        update_cache: yes
+
+    - name: Télécharger les images depuis DockerHub
+      command: |
+        docker pull nesrinebenrefifa/TODO-frontend:latest
+        docker pull nesrinebenrefifa/TODO-backend:latest
+
+    - name: Lancer les conteneurs avec Docker Compose
+      shell: docker-compose -f /app/docker-compose.yml up -d
