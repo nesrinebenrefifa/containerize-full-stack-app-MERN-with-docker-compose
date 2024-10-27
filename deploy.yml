@@ -1,18 +1,39 @@
 - hosts: webserver
   become: true
   tasks:
-    - name: Installer Docker et Docker Compose
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Docker and Docker Compose
       apt:
         name: 
           - docker.io
           - docker-compose
         state: present
-        update_cache: yes
+      register: docker_install
+      retries: 3
+      delay: 5
+      until: docker_install is succeeded
 
-    - name: Télécharger les images depuis DockerHub
+    - name: Ensure /app directory exists
+      file:
+        path: /app
+        state: directory
+        mode: '0755'
+
+    - name: Copy docker-compose.yml to /app
+      copy:
+        src: /home/nesrine/containerize-full-stack-app-MERN-with-docker-compose/docker-compose.yml
+        dest: /app/docker-compose.yml
+        remote_src: no  # Ensures Ansible knows the file is on the controller
+
+    - name: Download Docker images
       command: |
         docker pull nesrinebenrefifa/todo-frontend:latest
         docker pull nesrinebenrefifa/todo-backend:latest
 
-    - name: Lancer les conteneurs avec Docker Compose
+    - name: Start containers with Docker Compose
       shell: docker-compose -f /app/docker-compose.yml up -d
+      args:
+        chdir: /app
