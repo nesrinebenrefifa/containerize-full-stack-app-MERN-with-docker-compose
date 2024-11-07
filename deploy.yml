@@ -1,4 +1,3 @@
----
 - name: Déploiement de l'application MERN
   hosts: webserver
   become: yes
@@ -36,8 +35,8 @@
     # Étape 5 : Se connecter à Docker Hub (si nécessaire)
     - name: Connexion à Docker Hub
       community.docker.docker_login:
-        username: "nesrinebenrefifa"  # Use environment variable for secure login
-        password: "Nesrine55845676"  # Use environment variable for secure password
+        username: "{{ lookup('env', 'DOCKER_USERNAME') }}"  # Use environment variable for secure login
+        password: "{{ lookup('env', 'DOCKER_PASSWORD') }}"  # Use environment variable for secure password
       become: true
       become_user: root
       vars:
@@ -52,11 +51,7 @@
       command: docker pull nesrinebenrefifa/todo-backend:latest
 
     # Étape 8 : Démarrer l'application MERN avec Docker Compose (v2)
-    - name: Démarrer l'application MERN avec Docker Compose
-      community.docker.docker_compose_v2:
-        project_src: /home/nesrine/containerize-full-stack-app-MERN-with-docker-compose
-        project_name: containerize-full-stack-app-MERN-with-docker-compose
-        files:
-          - /home/nesrine/containerize-full-stack-app-MERN-with-docker-compose/docker-compose.yml
-        state: present
-        recreate: always
+    - name: Start containers with Docker Compose
+      command: docker compose -f /home/nesrine/containerize-full-stack-app-MERN-with-docker-compose/docker-compose.yml up -d
+
+       
