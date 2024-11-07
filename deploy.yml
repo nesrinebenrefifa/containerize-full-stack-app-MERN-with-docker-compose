@@ -1,39 +1,62 @@
-- hosts: webserver
-  become: true
-  tasks:
-    - name: Update apt cache
-      apt:
-        update_cache: yes
+---
+- name: Déploiement de l'application MERN
+  hosts: webserver
+  become: yes
 
-    - name: Install Docker and Docker Compose
-      apt:
-        name: 
+  tasks:
+    # Étape 1 : Cloner le dépôt GitHub
+    - name: Cloner le dépôt GitHub
+      ansible.builtin.git:
+        repo: https://github.com/nesrinebenrefifa/containerize-full-stack-app-MERN-with-docker-compose.git  # Replace with your actual repo URL
+        dest: /home/nesrine/containerize-full-stack-app-MERN-with-docker-compose
+        force: yes
+
+    # Étape 2 : Installer Docker et Docker Compose
+    - name: Installer Docker et Docker Compose
+      ansible.builtin.apt:
+        name:
           - docker.io
           - docker-compose
         state: present
-      register: docker_install
-      retries: 3
-      delay: 5
-      until: docker_install is succeeded
+        update_cache: yes
 
-    - name: Ensure /app directory exists
-      file:
-        path: /app
-        state: directory
-        mode: '0755'
+    # Étape 3 : Installer Node.js (required for MERN apps)
+    - name: Installer Node.js
+      ansible.builtin.apt:
+        name: nodejs
+        state: present
+        update_cache: yes
 
-    - name: Copy docker-compose.yml to /app
-      copy:
-        src: /home/nesrine/containerize-full-stack-app-MERN-with-docker-compose/docker-compose.yml
-        dest: /app/docker-compose.yml
-        remote_src: no  # Ensures Ansible knows the file is on the controller
+    # Étape 4 : Installer NPM (Node Package Manager)
+    - name: Installer NPM
+      ansible.builtin.apt:
+        name: npm
+        state: present
 
-    - name: Download Docker images
-      command: |
-        docker pull nesrinebenrefifa/todo-frontend:latest
-        docker pull nesrinebenrefifa/todo-backend:latest
+    # Étape 5 : Se connecter à Docker Hub (si nécessaire)
+    - name: Connexion à Docker Hub
+      community.docker.docker_login:
+        username: "nesrinebenrefifa"  # Use environment variable for secure login
+        password: "Nesrine55845676"  # Use environment variable for secure password
+      become: true
+      become_user: root
+      vars:
+        ansible_python_interpreter: /usr/bin/python3
 
-    - name: Start containers with Docker Compose
-      shell: docker-compose -f /app/docker-compose.yml up -d
-      args:
-        chdir: /app
+    # Étape 6 : Télécharger l'image Docker du frontend
+    - name: Télécharger l'image Docker du frontend
+      command: docker pull nesrinebenrefifa/todo-frontend:latest
+
+    # Étape 7 : Télécharger l'image Docker du backend
+    - name: Télécharger l'image Docker du backend
+      command: docker pull nesrinebenrefifa/todo-backend:latest
+
+    # Étape 8 : Démarrer l'application MERN avec Docker Compose (v2)
+    - name: Démarrer l'application MERN avec Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: /home/nesrine/containerize-full-stack-app-MERN-with-docker-compose
+        project_name: containerize-full-stack-app-MERN-with-docker-compose
+        files:
+          - /home/nesrine/containerize-full-stack-app-MERN-with-docker-compose/docker-compose.yml
+        state: present
+        recreate: always
